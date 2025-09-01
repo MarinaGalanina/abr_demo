@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")  # ensure headless backend
 import matplotlib.pyplot as plt
 
 # Define wave detection time windows in ms
@@ -22,13 +24,11 @@ def detect_wave(signal, time_ms, start_ms, end_ms, threshold, window=3):
 
     for i in range(window, len(segment) - window):
         bin_val = segment[i]
-        # Check if it's a local maximum
         if all(bin_val > segment[i - j] for j in range(1, window + 1)) and \
            all(bin_val > segment[i + j] for j in range(1, window + 1)) and \
            bin_val > threshold:
             peak_idx = start_idx + i
             peak_val = signal[peak_idx]
-            # Search for trough within 0.5 ms
             search_range = int(0.5 / (time_ms[1] - time_ms[0]))
             trough_segment = signal[peak_idx:peak_idx + search_range]
             if len(trough_segment) < 2:
@@ -66,14 +66,13 @@ def process_trace(signal, time_ms):
 def plot_waveform(signal, wave_data, title, time_ms, output_dir="Results_for_waves"):
     os.makedirs(output_dir, exist_ok=True)
 
-    # Skip initial values affecting y-scale only for plot
-    min_index = np.argmax(time_ms >= 0.5)  # Skip first 0.5 ms for better y scale
+    min_index = np.argmax(time_ms >= 0.5)
     plot_signal = signal[min_index:]
     plot_time = time_ms[min_index:]
 
-    # 1️⃣ Plot without wave markers
+    # 1️⃣ raw plot
     plt.figure(figsize=(10, 4))
-    plt.plot(plot_time, plot_signal, label="Average ABR waveform", color='black')
+    plt.plot(plot_time, plot_signal, color='black', label="Average ABR waveform")
     plt.title(f"{title} (raw)")
     plt.xlabel("Time (ms)")
     plt.ylabel("Amplitude")
@@ -81,12 +80,11 @@ def plot_waveform(signal, wave_data, title, time_ms, output_dir="Results_for_wav
     plt.tight_layout()
     raw_path = os.path.join(output_dir, f"{title}_raw.png")
     plt.savefig(raw_path, dpi=300)
-    plt.show()
     plt.close()
 
-    # 2️⃣ Plot with detected waves
+    # 2️⃣ with waves
     plt.figure(figsize=(10, 4))
-    plt.plot(plot_time, plot_signal, label="Average ABR waveform", color='black')
+    plt.plot(plot_time, plot_signal, color='black', label="Average ABR waveform")
 
     colors = ['b', 'm', 'g', 'purple', 'cyan']
     for i, wave in enumerate(WAVE_WINDOWS.keys()):
@@ -104,35 +102,24 @@ def plot_waveform(signal, wave_data, title, time_ms, output_dir="Results_for_wav
     plt.tight_layout()
     wave_path = os.path.join(output_dir, f"{title}_with_waves.png")
     plt.savefig(wave_path, dpi=300)
-    plt.show()
     plt.close()
 
+    return os.path.basename(raw_path), os.path.basename(wave_path)
 
 def process_file(signal_path, time_path):
-    # Load time data
     df_time = pd.read_csv(time_path)
     time_ms = df_time.iloc[:, 0].to_numpy(dtype=np.float32)
-    time_ms = time_ms - time_ms[0]  # Set starting point to 0 ms
+    time_ms = time_ms - time_ms[0]
 
-    # Load signal data
     df_signal = pd.read_csv(signal_path)
-
-    # Adjust lengths: truncate both to the shorter of the two
     max_len = min(len(time_ms), len(df_signal))
     time_ms = time_ms[:max_len]
     df_signal = df_signal.iloc[:max_len, :]
 
-    # Extract mouse/patient ID
     mouse_id = os.path.basename(signal_path).split('.')[0]
-
-    # Average across electrodes
     average_signal = df_signal.mean(axis=1).to_numpy(dtype=np.float32)
-
-    # Detect waves
     wave_data = process_trace(average_signal, time_ms)
 
-    # Prepare CSV row
-    # Prepare CSV row for only Wave V
     wave = 'wave_5'
     d = wave_data[wave]
     row_out = {
@@ -144,15 +131,15 @@ def process_file(signal_path, time_path):
         'wave_5_trough_bin': d['trough_bin']
     }
 
-    # Generate waveform plot
-    plot_waveform(average_signal, wave_data, f"Patient_{mouse_id}_average", time_ms)
+    # ✅ capture filenames
+    raw_img, wave_img = plot_waveform(average_signal, wave_data, f"Patient_{mouse_id}_average", time_ms)
+    row_out["raw_plot_filename"] = raw_img
+    row_out["plot_filename"] = wave_img
 
     return pd.DataFrame([row_out])
 
-
 def main():
     import argparse
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--signal", required=True, help="Path to signal CSV file (e.g. 215.csv)")
     parser.add_argument("--time", required=True, help="Path to time CSV file (e.g. time_data.csv)")
