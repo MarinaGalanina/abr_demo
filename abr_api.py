@@ -10,9 +10,26 @@ import os
 os.makedirs("Results_for_waves", exist_ok=True)
 from abr_analyzer import process_file
 
+from fastapi.responses import HTMLResponse
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def root():
+    return """
+    <html>
+        <head>
+            <title>ABR Wave Detection API</title>
+        </head>
+        <body>
+            <h1>ABR Wave Detection API 🚀</h1>
+            <p>This API detects ABR waves from CSV files with amplitude traces and time values.</p>
+            <p>You can try it out via the <a href="/docs">interactive Swagger docs</a> or the <a href="/redoc">ReDoc docs</a>.</p>
+        </body>
+    </html>
+    """
+    
 app = FastAPI(
     title="ABR Wave Detection API",
-    description="Detect ABR waves from signal and time CSVs.",
+    description="Dla każdej z pięciu fal (I–V) wyznaczane są charakterystyczne przedziały czasowe, w których może wystąpić dana fala. Algorytm przeszukuje sygnał w tych oknach, szukając lokalnych maksimów (szczytów) oraz odpowiadających im minimów w pobliżu. Latencja fali to czas wystąpienia szczytu, a amplituda to różnica między wartością szczytu i dołka. Jeżeli fala nie zostanie znaleziona przy wyższym progu, algorytm obniża próg amplitudy i próbuje ponownie. Wynikiem działania są wartości latencji i amplitudy dla każdej wykrytej fali, a także wykres sygnału z zaznaczonymi punktami detekcji.",
     version="1.0.0"
 )
 
@@ -64,5 +81,6 @@ async def detect_waves(
 @app.on_event("shutdown")
 def cleanup_temp():
     shutil.rmtree("temp_data", ignore_errors=True)
+
 
 
