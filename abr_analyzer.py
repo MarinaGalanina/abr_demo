@@ -104,7 +104,7 @@ def plot_waveform(signal, wave_data, title, time_ms, output_dir="Results_for_wav
 
     return os.path.basename(raw_path), os.path.basename(wave_path)
 
-def process_file(signal_path, time_path):
+def process_file(signal_path, time_path, db_path="db.csv"):
     df_time = pd.read_csv(time_path)
     time_ms = df_time.iloc[:, 0].to_numpy(dtype=np.float32)
     time_ms = time_ms - time_ms[0]
@@ -128,7 +128,30 @@ def process_file(signal_path, time_path):
         'wave_5_peak_bin': d['peak_bin'],
         'wave_5_trough_bin': d['trough_bin']
     }
-    raw_img, wave_img = plot_waveform(average_signal, wave_data, f"Patient_{mouse_id}_average", time_ms)
+
+    # ✅ porównanie z bazą
+    if os.path.exists(db_path):
+        try:
+            df_db = pd.read_csv(db_path, sep=",|\t", engine="python")  # obsługa csv/tsv
+            ref = df_db[df_db["plik"] == mouse_id]
+            if not ref.empty and pd.notna(d['latency_ms']):
+                ref_latency = ref["latencja_V"].values[0]
+                row_out["ref_latency_V"] = ref_latency
+                row_out["abs_error_ms"] = abs(d['latency_ms'] - ref_latency)
+                row_out["error_ms"] = d['latency_ms'] - ref_latency
+            else:
+                row_out["ref_latency_V"] = None
+                row_out["abs_error_ms"] = None
+                row_out["error_ms"] = None
+        except Exception as e:
+            print(f"⚠️ Error reading db.csv: {e}")
+            row_out["ref_latency_V"] = None
+            row_out["abs_error_ms"] = None
+            row_out["error_ms"] = None
+
+    raw_img, wave_img = plot_waveform(
+        average_signal, wave_data, f"Patient_{mouse_id}_average", time_ms
+    )
     row_out["raw_plot_filename"] = raw_img
     row_out["plot_filename"] = wave_img
 
@@ -148,6 +171,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
