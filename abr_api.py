@@ -38,7 +38,7 @@ async def root():
     """
 
 
-@app.post("/detect", summary="Detect ABR waves from signal/time CSVs")
+@app.post("/detect", summary="Dla każdej z pięciu fal (I–V) wyznaczane są charakterystyczne przedziały czasowe, w których może wystąpić dana fala. Algorytm przeszukuje sygnał w tych oknach, szukając lokalnych maksimów (szczytów) oraz odpowiadających im minimów w pobliżu. Latencja fali to czas wystąpienia szczytu, a amplituda to różnica między wartością szczytu i dołka. Jeżeli fala nie zostanie znaleziona przy wyższym progu, algorytm obniża próg amplitudy i próbuje ponownie. Wynikiem działania są wartości latencji i amplitudy dla każdej wykrytej fali, a także wykres sygnału z zaznaczonymi punktami detekcji.")
 async def detect_waves(
     signal_csv: UploadFile = File(..., description="CSV with amplitude traces"),
     time_csv: Optional[UploadFile] = File(None, description="(Optional) CSV with time values")
@@ -83,6 +83,7 @@ async def detect_waves(
 @app.on_event("shutdown")
 def cleanup_temp():
     shutil.rmtree("temp_data", ignore_errors=True)
+
 
 
 
