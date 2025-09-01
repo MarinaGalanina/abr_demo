@@ -22,7 +22,8 @@ app.mount("/results", StaticFiles(directory="Results_for_waves"), name="results"
 @app.post("/detect", summary="Detect ABR waves from signal/time CSVs")
 async def detect_waves(
     signal_csv: UploadFile = File(..., description="CSV with amplitude traces"),
-    time_csv: UploadFile = File(None, description="(Optional) CSV with time values")
+    time_csv: Optional[UploadFile] = File(None, description="(Optional) CSV with time values")
+
 ):
     temp_dir = f"temp_data/{uuid4().hex}"
     os.makedirs(temp_dir, exist_ok=True)
@@ -63,4 +64,5 @@ async def detect_waves(
 @app.on_event("shutdown")
 def cleanup_temp():
     shutil.rmtree("temp_data", ignore_errors=True)
+
 
