@@ -1,8 +1,6 @@
 import os
 import numpy as np
 import pandas as pd
-import matplotlib
-matplotlib.use("Agg")  # ensure headless backend
 import matplotlib.pyplot as plt
 
 # Define wave detection time windows in ms
@@ -152,3 +150,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
