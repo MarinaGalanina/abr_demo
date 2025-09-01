@@ -129,7 +129,8 @@ def process_file(signal_path, time_path):
         'wave_5_trough_bin': d['trough_bin']
     }
 
-    # ✅ capture filenames
+    print("DEBUG row_out:", row_out)
+    print("DEBUG DataFrame:", pd.DataFrame([row_out]))
     raw_img, wave_img = plot_waveform(average_signal, wave_data, f"Patient_{mouse_id}_average", time_ms)
     row_out["raw_plot_filename"] = raw_img
     row_out["plot_filename"] = wave_img
@@ -150,4 +151,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
