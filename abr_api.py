@@ -1,6 +1,7 @@
 # abr_api.py
 from fastapi import FastAPI, UploadFile, File
 from fastapi.staticfiles import StaticFiles
+from typing import Optional
 import pandas as pd
 import os
 import shutil
@@ -62,3 +63,4 @@ async def detect_waves(
 @app.on_event("shutdown")
 def cleanup_temp():
     shutil.rmtree("temp_data", ignore_errors=True)
+
